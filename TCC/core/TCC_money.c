@@ -1,6 +1,6 @@
 #include <TCC/TCC_money.h>
 #include <TCC/TCC_thr_config.h>
-// #include <TCC/utils/TCC_cpuInfo.h>
+
 #include <threads.h>
 #include <stdlib.h>
 
@@ -205,29 +205,6 @@ TCC_Money TCC_moneyYearSum(const TCC_MoneyNotes * notesPtr, const TCC_DateYear y
 
 // ДОПОЛНЕНИЯ
 
-static int TCC_findMaxTransaction_step(void* data) {
-    TCC_MoneyNotesStep_p* step = (TCC_MoneyNotesStep_p*)data;
-    TCC_MaxTransactionData* maxData = (TCC_MaxTransactionData*)step->userData;
-    
-    TCC_Money localMax = 0;
-    size_t localMaxIndex = 0;
-    
-    for(size_t i = step->startIndex; i <= step->endIndex; ++i) {
-        if(step->moneyPtr[i] > localMax) {
-            localMax = step->moneyPtr[i];
-            localMaxIndex = i;
-        }
-    }
-    
-    atomic_compare_exchange_strong(&maxData->maxAmount, &maxData->maxAmount, localMax);
-    if(localMax > maxData->maxAmount) {
-        maxData->maxAmount = localMax;
-        maxData->maxIndex = localMaxIndex;
-        maxData->maxDate = step->datePtr[localMaxIndex];
-    }
-    
-    return 0;
-}
 
 TCC_MaxTransactionData TCC_findMaxTransaction(const TCC_MoneyNotes* notesPtr) {
     TCC_MaxTransactionData result = {0, 0, {0, 0, 0}};
@@ -260,27 +237,6 @@ TCC_MaxTransactionData TCC_findMaxTransaction(const TCC_MoneyNotes* notesPtr) {
     }
     
     return result;
-}
-
-static int TCC_calculateYearStats_step(void* data) {
-    TCC_MoneyNotesStep_p* step = (TCC_MoneyNotesStep_p*)data;
-    TCC_YearStats* yearStats = (TCC_YearStats*)step->userData;
-    
-    for(size_t i = step->startIndex; i <= step->endIndex; ++i) {
-        TCC_DateYear year = step->datePtr[i].year;
-        TCC_Money amount = step->moneyPtr[i];
-        
-        atomic_fetch_add(&yearStats[year].total, amount);
-        atomic_fetch_add(&yearStats[year].count, 1);
-        
-        TCC_Money currentMin = atomic_load(&yearStats[year].min);
-        TCC_Money currentMax = atomic_load(&yearStats[year].max);
-        
-        if(amount < currentMin) atomic_store(&yearStats[year].min, amount);
-        if(amount > currentMax) atomic_store(&yearStats[year].max, amount);
-    }
-    
-    return 0;
 }
 
 TCC_YearStats* TCC_calculateYearStats(const TCC_MoneyNotes* notesPtr, size_t* numYears) {
@@ -332,21 +288,6 @@ TCC_YearStats* TCC_calculateYearStats(const TCC_MoneyNotes* notesPtr, size_t* nu
     }
     
     return stats;
-}
-
-static int TCC_filterTransactions_step(void* data) {
-    TCC_MoneyNotesStep_p* step = (TCC_MoneyNotesStep_p*)data;
-    TCC_FilterData* filterData = (TCC_FilterData*)step->userData;
-    
-    for(size_t i = step->startIndex; i <= step->endIndex; ++i) {
-        TCC_Money amount = step->moneyPtr[i];
-        if(amount >= filterData->minAmount && amount <= filterData->maxAmount) {
-            size_t index = atomic_fetch_add(&filterData->resultCount, 1);
-            filterData->resultArray[index] = amount;
-        }
-    }
-    
-    return 0;
 }
 
 TCC_MoneyNotes* TCC_filterTransactions(const TCC_MoneyNotes* notesPtr, 
