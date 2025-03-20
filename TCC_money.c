@@ -253,12 +253,12 @@ TCC_YearStats* TCC_calculateYearStats(const TCC_MoneyNotes* notesPtr, size_t* nu
     TCC_YearStats* stats = (TCC_YearStats*)calloc(*numYears, sizeof(TCC_YearStats));
     if(!stats) return NULL;
     
-    // Инициализируем начальные значения
+     //  Инициализация статистики
     for(size_t i = 0; i < *numYears; ++i) {
-        stats[i].min = TCC_MONEY_MAX;
-        stats[i].max = 0;
+        stats[i].min = 0;
+        stats[i].max = TCC_MONEY_MAX; 
     }
-    
+    // Инициализация пула потоков
     if(g_threadPool == NULL) {
         TCC_Error err = TCC_threadPoolInit();
         if(err != TCC_ERROR_MISSING) {
