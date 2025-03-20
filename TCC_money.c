@@ -162,6 +162,26 @@ static int TCC_getOptimalThreadCount(void) {
     return (cpuCount * 3) / 4;
 }
 
+TCC_Error TCC_moneyNotesGetFirstN(const TCC_MoneyNotes* sourceP, TCC_MoneyNotes* destP, size_t n) {
+    if (!sourceP || !destP || !sourceP->moneyArr) {
+        return TCC_ERROR_INVALID_PARAMETER;
+    }
+
+    size_t count = (n > sourceP->length) ? sourceP->length : n;
+
+    TCC_Error error = TCC_moneyNotesCreate(destP, count);
+    if (error != TCC_ERROR_NONE) {
+        return error;
+    }
+
+    memcpy(destP->moneyArr, sourceP->moneyArr, count * sizeof(TCC_Money));
+    memcpy(destP->dateArr, sourceP->dateArr, count * sizeof(TCC_Date));
+    destP->length = count;
+
+    return TCC_ERROR_NONE;
+}
+
+
 static TCC_Money TCC_moneyRangeSum_p(const TCC_MoneyNotes * notesPtr, 
                                     const size_t startIndex, const size_t endIndex)
 {
