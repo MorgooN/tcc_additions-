@@ -228,7 +228,7 @@ TCC_MaxTransactionData TCC_findMaxTransaction(const TCC_MoneyNotes* notesPtr) {
     }
     
     for(size_t i = 0; i < g_threadPool->numThreads; ++i) {
-        thrd_create(&g_threadPool->threads[i], TCC_findMaxTransaction_step, 
+        thrd_create(&g_threadPool->threads[i], TCC_findMaxTransaction, 
             &g_threadPool->threadData[i]);
     }
     
